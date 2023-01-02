@@ -1,0 +1,113 @@
+import pandas as pd
+import matplotlib.pyplot as plt
+#load dataset
+df = pd.read_csv('tweetData.csv')
+
+#preview data set
+#print(df.head())
+
+# picking the tweet column - text preprocessing to clean the data
+  #TWEET COLUMN 
+   # - Text Preproccesing, Sentimental Analysis, Keyword Extraction and Entity Extraction
+#retreiving columns
+#print(df.dtypes)
+
+#for the tweet analysis, i installed neattext
+#load text cleaning package
+import neattext.functions as nfx
+(dir(nfx))
+#assessing the tweet
+(df['Tweet'].iloc[4])
+
+#Cleaning all mentions/userhandles, remove url, emojis, special characters
+df['Tweet'].apply(nfx.extract_hashtags) #extracting the hashtags in the tweet
+#creating a new column for it 
+df['extracted_hashtags'] = df['Tweet'].apply(nfx.extract_hashtags)
+
+#comparing the two hashtags columns
+(df[['extracted_hashtags', 'Hashtags']])
+
+#Cleaning of tweet
+df['clean_tweet'] = df['Tweet'].apply(nfx.remove_hashtags)
+df['clean_tweet'] = df['clean_tweet'].apply(nfx.remove_userhandles)
+df['clean_tweet'] = df['clean_tweet'].apply(nfx.remove_userhandles)
+df['clean_tweet'] = df['clean_tweet'].apply(nfx.remove_multiple_spaces)
+df['clean_tweet'] = df['clean_tweet'].apply(nfx.remove_urls)
+df['clean_tweet'] = df['clean_tweet'].apply(nfx.remove_puncts)
+#print(df[['clean_tweet', 'Tweet']])
+
+##sentimental analysis
+from textblob import TextBlob
+def get_sentiment(text):
+    blob = TextBlob(text)
+    sentiment_polarity = blob.sentiment.polarity
+    sentiment_subjectivity = blob.sentiment.subjectivity
+    if sentiment_polarity > 0:
+        sentiment_label = 'Positive'
+    elif sentiment_polarity < 0:
+        sentiment_label = 'Negative'
+    else:
+        sentiment_label = 'Neutral'
+    result = {'polarity':sentiment_polarity,
+              'subjectivity':sentiment_subjectivity,
+              'sentiment':sentiment_label}
+    return result
+
+df['sentiment_results'] = df['clean_tweet'].apply(get_sentiment)
+#print(df['sentiment_results'])
+
+#spliting the dictionary into 3 to get the polarity, subjectivity and sentiment into 3 different columns
+
+df = df.join(pd.json_normalize(df['sentiment_results']))
+#print(df.head())
+
+#value count of the sentiment
+#print(df['sentiment'].value_counts())
+
+#plot 
+#df['sentiment'].value_counts().plot(kind='bar')
+
+### Key word extraction for positive words and general
+positive_tweet = df[df['sentiment'] == 'Positive']['clean_tweet']
+negative_tweet = df[df['sentiment'] == 'Negative']['clean_tweet']
+
+#remove stopwords and convert to Tokens
+positive_tweet_list = positive_tweet.apply(nfx.remove_stopwords).tolist()
+negative_tweet_list = negative_tweet.apply(nfx.remove_stopwords).tolist()
+
+#tokenization
+for line in positive_tweet_list:
+#     print(line)
+    for token in line.split():
+        print(token)
+pos_tokens = [token for line in positive_tweet_list  for token in line.split()]
+neg_tokens = [token for line in negative_tweet_list  for token in line.split()]
+
+pos_tokens
+# Get Most Common Keywords
+from collections import Counter
+def get_tokens(docx,num=30):
+    word_tokens = Counter(docx)
+    most_common = word_tokens.most_common(num)
+    result = dict(most_common)
+    return result
+get_tokens(pos_tokens)
+
+most_common_pos_words = get_tokens(pos_tokens)
+most_common_neg_words = get_tokens(neg_tokens)
+
+
+### Word Cloud
+#import WordCloud as 
+#def plot_wordcloud(docx):
+  #  plt.figure(figsize=(20,10))
+  #  mywordcloud = WordCloud().generate(docx)
+  #  plt.imshow(mywordcloud,interpolation='bilinear')
+  #  plt.axis('off')
+  #  plt.show()
+#pos_docx = ' '.join(pos_tokens)
+#neg_docx = ' '.join(neg_tokens)
+
+#plot_wordcloud(pos_docx)
+
+df.to_csv('tweetData.csv')
