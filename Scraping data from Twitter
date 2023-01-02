@@ -1,0 +1,19 @@
+import snscrape.modules.twitter as sntwitter
+import pandas as pd
+
+
+query = "(Damiyah OR Ekinde OR Tandrew OR lucaandgemma OR loveislandUK2022 OR loveisland OR loveislanduk) until:2022-08-31 since:2022-08-01"
+tweets = []
+limit =  200000
+
+
+for tweet in sntwitter.TwitterSearchScraper(query).get_items():
+    
+    # print(vars(tweet))
+    # break
+    if len(tweets) == limit:
+        break
+    else:
+        tweets.append([tweet.date, tweet.user, tweet.content, tweet.user.location, tweet.hashtags, tweet.retweetCount, tweet.likeCount])
+        
+df = pd.DataFrame(tweets, columns=['Date', 'User', 'Tweet', 'Location', 'Hashtags', 'Total_retweets', 'Total_likes'])
